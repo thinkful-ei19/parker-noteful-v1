@@ -17,6 +17,14 @@ const noteful = (function () {
    * GENERATE HTML FUNCTIONS
    */
   function generateNotesList(list, currentNote) {
+    list.filter(function(note) {
+      return note.id !== currentNote.id;
+    });
+    for (let i = 0; i < list.length; i++) {
+      if (currentNote.id !== list[i].id) {
+
+      }
+    }
     const listItems = list.map(item => `
     <li data-id="${item.id}" class="js-note-element ${currentNote.id === item.id ? 'active' : ''}">
       <a href="#" class="name js-note-show-link">${item.title}</a>
@@ -65,43 +73,62 @@ const noteful = (function () {
     });
   }
 
-  function handleNoteFormSubmit() {
-    $('.js-note-edit-form').on('submit', function (event) {
-      event.preventDefault();
+ function handleNoteFormSubmit() {
+  $('.js-note-edit-form').on('submit', function (event) {
+    event.preventDefault();
 
-      const editForm = $(event.currentTarget);
+    const editForm = $(event.currentTarget);
 
-      const noteObj = {
-        title: editForm.find('.js-note-title-entry').val(),
-        content: editForm.find('.js-note-content-entry').val(),
-      };
-      
-      noteObj.id = store.currentNote.id;
-      console.log(noteObj);
-      api.update(noteObj.id, noteObj, updateResponse => {
+    const noteObj = {
+      id: store.currentNote.id,
+      title: editForm.find('.js-note-title-entry').val(),
+      content: editForm.find('.js-note-content-entry').val()
+    };
+
+    if (store.currentNote.id) {
+
+      api.update(store.currentNote.id, noteObj, updateResponse => {
         store.currentNote = updateResponse;
-        
-        render();
+
+        api.search(store.currentSearchTerm, updateResponse => {
+          store.notes = updateResponse;
+          render();
+        });
+
       });
 
-    });
-  }
+    } else {
+
+      api.create(noteObj, updateResponse => {
+        store.currentNote = updateResponse;
+
+        api.search(store.currentSearchTerm, updateResponse => {
+          store.notes = updateResponse;
+          render();
+        });
+
+      });
+    }
+
+  });
+}
 
   function handleNoteStartNewSubmit() {
     $('.js-start-new-note-form').on('submit', event => {
       event.preventDefault();
-
-      console.log('Start New Note, coming soon...');
-
+      store.currentNote = false;
+      render();
     });
   }
 
   function handleNoteDeleteClick() {
     $('.js-notes-list').on('click', '.js-note-delete-button', event => {
       event.preventDefault();
-
-      console.log('Delete Note, coming soon...');
-      
+      const id = getNoteIdFromElement(event.currentTarget);
+      api.delete(id, () => {
+        store.findAndDelete(id);
+        render();
+      });
     });
   }
 
